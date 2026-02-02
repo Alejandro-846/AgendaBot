@@ -3,19 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "updates": [
-          "message"
-        ],
+        "updates": ["message"],
         "additionalFields": {}
       },
       "id": "40eddecf-1fcb-466a-b4b9-a191e6e23d2c",
       "name": "Telegram Trigger",
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.1,
-      "position": [
-        -1904,
-        -16
-      ],
+      "position": [-2100, 0],
       "webhookId": "webhook-telegram-bot",
       "credentials": {
         "telegramApi": {
@@ -26,111 +21,35 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extraer información del mensaje de Telegram\nconst message = $input.item.json.message;\nconst telegramUser = message.from.id.toString();\nconst userName = message.from.first_name || 'Usuario';\nconst userInput = (message.text || '').trim();\nconst chatId = message.chat.id;\n\n// Registrar timestamp\nconst timestamp = new Date().toISOString();\n\nreturn {\n  telegram_user: telegramUser,\n  user_name: userName,\n  user_input: userInput,\n  chat_id: chatId,\n  timestamp: timestamp\n};"
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extraer información del mensaje de Telegram\nconst message = $input.item.json.message;\nconst telegramUser = message.from.id.toString();\nconst userName = message.from.first_name || 'Usuario';\nconst userInput = (message.text || '').trim();\nconst chatId = message.chat.id;\n\n// Registrar timestamp\nconst timestamp = new Date().toISOString();\n\n// Crear sesión por defecto\nconst currentSession = {\n  telegram_user: telegramUser,\n  pantalla_actual: 'menu_principal',\n  paso_actual: '0',\n  datos_parciales: '{}',\n  timestamp_ultima_interaccion: timestamp,\n  es_nueva: true\n};\n\n// Por defecto permitir acceso (se validará con USUARIOS si existe)\nreturn {\n  json: {\n    telegram_user: telegramUser,\n    user_name: userName,\n    user_input: userInput,\n    chat_id: chatId,\n    timestamp: timestamp,\n    session: currentSession,\n    is_allowed: true,\n    user_role: 'usuario'\n  }\n};"
       },
       "id": "06622393-60f7-4736-ac56-45a502d93bc7",
       "name": "Extraer Datos Usuario",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -1696,
-        -16
-      ]
-    },
-    {
-      "parameters": {
-        "documentId": {
-          "__rl": true,
-          "mode": "url",
-          "value": "=https://docs.google.com/spreadsheets/d/1BYDjI0JpYwxsRnA3DmileUc8Q2qjuzZoDfFoL2GaZEQ/edit?gid=0#gid=0",
-          "__regex": "https:\\/\\/(?:drive|docs)\\.google\\.com(?:\\/.*|)\\/d\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "SESSIONS",
-          "mode": "name"
-        },
-        "options": {}
-      },
-      "id": "b0f08247-64b7-449a-941a-c5f48baadf34",
-      "name": "Obtener Sesión",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.4,
-      "position": [
-        -1504,
-        -16
-      ],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "G3DQi64AsP2s4cAL",
-          "name": "Google Sheets account 2"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Buscar sesión del usuario actual\nconst telegramUser = $input.first().json.telegram_user;\nconst allItems = $input.all();\n\nlet currentSession = null;\n\nfor (let item of allItems) {\n  const data = item.json;\n  if (data.telegram_user === telegramUser) {\n    currentSession = {\n      telegram_user: data.telegram_user || telegramUser,\n      pantalla_actual: data.pantalla_actual || 'menu_principal',\n      paso_actual: data.paso_actual || '0',\n      datos_parciales: data.datos_parciales || '{}',\n      timestamp_ultima_interaccion: data.timestamp_ultima_interaccion || ''\n    };\n    break;\n  }\n}\n\n// Si no hay sesión, crear una nueva\nif (!currentSession) {\n  currentSession = {\n    telegram_user: telegramUser,\n    pantalla_actual: 'menu_principal',\n    paso_actual: '0',\n    datos_parciales: '{}',\n    timestamp_ultima_interaccion: new Date().toISOString()\n  };\n}\n\nconst firstItem = $input.first().json;\n\nreturn {\n  ...firstItem,\n  session: currentSession\n};"
-      },
-      "id": "408f98eb-eabd-4006-a7f4-ffd3ab3e50f7",
-      "name": "Procesar Sesión",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1296,
-        -16
-      ]
-    },
-    {
-      "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "=https://docs.google.com/spreadsheets/d/1BYDjI0JpYwxsRnA3DmileUc8Q2qjuzZoDfFoL2GaZEQ/edit?gid=0#gid=0",
-          "mode": "id"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "USUARIOS",
-          "mode": "name"
-        },
-        "options": {}
-      },
-      "id": "816dadd4-7355-455f-8f22-caf4b63811c6",
-      "name": "Verificar Permisos",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.4,
-      "position": [
-        -1104,
-        -16
-      ],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "G3DQi64AsP2s4cAL",
-          "name": "Google Sheets account 2"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Verificar si el usuario tiene permisos\nconst telegramUser = $input.first().json.telegram_user;\nconst allItems = $input.all();\n\nlet isAllowed = false;\nlet userRole = 'usuario';\nlet userName = $input.first().json.user_name;\n\nfor (let item of allItems) {\n  const data = item.json;\n  if (data.telegram_user === telegramUser) {\n    userName = data.nombre || userName;\n    userRole = data.rol || 'usuario';\n    isAllowed = data.permitido === 'SI' || data.permitido === true;\n    break;\n  }\n}\n\n// Si no está registrado, permitir acceso básico\nif (!isAllowed) {\n  isAllowed = true; // Permitir acceso por defecto\n  userRole = 'usuario';\n}\n\nconst firstItem = $input.first().json;\n\nreturn {\n  ...firstItem,\n  is_allowed: isAllowed,\n  user_role: userRole,\n  user_name: userName\n};"
-      },
-      "id": "ff855245-8994-41e1-b68a-359f03e9008c",
-      "name": "Validar Permiso",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -896,
-        -16
-      ]
+      "position": [-1900, 0]
     },
     {
       "parameters": {
         "conditions": {
-          "boolean": [
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
             {
-              "value1": "={{ $json.is_allowed }}",
-              "value2": true
+              "id": "condition-allowed",
+              "leftValue": "={{ $json.is_allowed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
-          ]
+          ],
+          "combinator": "and"
         },
         "options": {}
       },
@@ -138,25 +57,19 @@
       "name": "¿Tiene Acceso?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        -704,
-        -16
-      ]
+      "position": [-700, 0]
     },
     {
       "parameters": {
         "chatId": "={{ $json.chat_id }}",
-        "text": "Lo siento, no tienes permisos para usar este bot. Por favor contacta al administrador.",
+        "text": "⛔ Lo siento, no tienes permisos para usar este bot.\n\nPor favor contacta al administrador para solicitar acceso.",
         "additionalFields": {}
       },
       "id": "1b567394-2e26-4976-8e94-53e09f8f1e02",
       "name": "Enviar Sin Permiso",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [
-        -496,
-        144
-      ],
+      "position": [-500, 200],
       "webhookId": "849a7655-ca93-4ba2-9f01-d6f2846a218c",
       "credentials": {
         "telegramApi": {
@@ -167,16 +80,13 @@
     },
     {
       "parameters": {
-        "jsCode": "// Router principal - determina a qué menú ir\nconst userInput = $input.item.json.user_input.toLowerCase();\nconst session = $input.item.json.session;\nconst pantallaActual = session.pantalla_actual;\nconst pasoActual = parseInt(session.paso_actual) || 0;\n\nlet routeTo = 'menu_principal';\nlet newPaso = 0;\n\n// Comandos globales\nif (userInput === '/start' || userInput === 'start') {\n  routeTo = 'bienvenida';\n} else if (userInput === '9' && pasoActual > 0) {\n  routeTo = 'cancelar_flujo';\n} else {\n  // Routing basado en pantalla actual\n  switch (pantallaActual) {\n    case 'menu_principal':\n      const menuOptions = {\n        '0': 'ayuda',\n        '1': 'menu_agenda',\n        '2': 'menu_tareas',\n        '3': 'menu_recordatorios',\n        '4': 'menu_habitos',\n        '5': 'menu_listas',\n        '6': 'menu_reportes',\n        '7': 'menu_configuracion',\n        '8': 'menu_admin'\n      };\n      routeTo = menuOptions[userInput] || 'opcion_invalida';\n      break;\n    \n    case 'menu_agenda':\n      const agendaOptions = {\n        '1': 'agendar_cita_paso1',\n        '2': 'consultar_agenda',\n        '3': 'reprogramar_cita',\n        '4': 'cancelar_cita',\n        '5': 'completar_cita',\n        '9': 'menu_principal'\n      };\n      routeTo = agendaOptions[userInput] || 'opcion_invalida';\n      if (routeTo === 'agendar_cita_paso1') newPaso = 1;\n      break;\n    \n    case 'agendar_cita_paso1':\n      routeTo = 'agendar_cita_paso2';\n      newPaso = 2;\n      break;\n    \n    case 'agendar_cita_paso2':\n      routeTo = 'agendar_cita_paso3';\n      newPaso = 3;\n      break;\n    \n    case 'agendar_cita_paso3':\n      routeTo = 'agendar_cita_paso4';\n      newPaso = 4;\n      break;\n    \n    case 'agendar_cita_paso4':\n      routeTo = 'agendar_cita_paso5';\n      newPaso = 5;\n      break;\n    \n    case 'agendar_cita_paso5':\n      routeTo = 'agendar_cita_paso6';\n      newPaso = 6;\n      break;\n    \n    case 'agendar_cita_paso6':\n      const confirmOptions = {\n        '1': 'guardar_cita',\n        '2': 'editar_cita',\n        '3': 'cancelar_flujo'\n      };\n      routeTo = confirmOptions[userInput] || 'opcion_invalida';\n      newPaso = 0;\n      break;\n    \n    default:\n      routeTo = 'menu_principal';\n  }\n}\n\nreturn {\n  ...$input.item.json,\n  route_to: routeTo,\n  new_paso: newPaso\n};"
+        "jsCode": "// Router principal - determina a qué menú ir\nconst userInput = ($json.user_input || '').toLowerCase().trim();\nconst session = $json.session || { pantalla_actual: 'menu_principal', paso_actual: '0', datos_parciales: '{}' };\nconst pantallaActual = session.pantalla_actual || 'menu_principal';\nconst pasoActual = parseInt(session.paso_actual) || 0;\n\nlet datosParciales = {};\ntry {\n  datosParciales = JSON.parse(session.datos_parciales || '{}');\n} catch(e) {\n  datosParciales = {};\n}\n\nlet routeTo = 'menu_principal';\nlet newPaso = 0;\nlet newDatos = datosParciales;\nlet validacionError = null;\n\n// Comandos globales\nif (userInput === '/start' || userInput === 'start') {\n  routeTo = 'bienvenida';\n  newDatos = {};\n  newPaso = 0;\n} else if (userInput === '9') {\n  // Cancelar o volver\n  if (pasoActual > 0) {\n    routeTo = 'cancelar_flujo';\n    newDatos = {};\n    newPaso = 0;\n  } else {\n    routeTo = 'menu_principal';\n    newDatos = {};\n    newPaso = 0;\n  }\n} else {\n  // Routing basado en pantalla actual\n  switch (pantallaActual) {\n    case 'bienvenida':\n    case 'menu_principal':\n      const menuOptions = {\n        '0': 'ayuda',\n        '1': 'menu_agenda',\n        '2': 'menu_tareas',\n        '3': 'menu_recordatorios',\n        '4': 'menu_habitos',\n        '5': 'menu_listas',\n        '6': 'menu_reportes',\n        '7': 'menu_configuracion',\n        '8': 'menu_admin'\n      };\n      routeTo = menuOptions[userInput] || 'opcion_invalida';\n      break;\n    \n    case 'menu_agenda':\n      const agendaOptions = {\n        '1': 'agendar_cita_paso1',\n        '2': 'consultar_agenda',\n        '3': 'reprogramar_cita',\n        '4': 'cancelar_cita_menu',\n        '5': 'completar_cita'\n      };\n      routeTo = agendaOptions[userInput] || 'opcion_invalida';\n      if (routeTo === 'agendar_cita_paso1') {\n        newPaso = 1;\n        newDatos = {};\n      }\n      break;\n    \n    case 'agendar_cita_paso1':\n      // Validar fecha\n      const fechaRegex = /^\\d{4}-\\d{2}-\\d{2}$/;\n      if (fechaRegex.test(userInput)) {\n        const fechaIngresada = new Date(userInput + 'T00:00:00');\n        const hoy = new Date();\n        hoy.setHours(0, 0, 0, 0);\n        \n        if (fechaIngresada >= hoy) {\n          newDatos.fecha = userInput;\n          routeTo = 'agendar_cita_paso2';\n          newPaso = 2;\n        } else {\n          routeTo = 'validacion_error';\n          validacionError = '❌ No puedes agendar citas en el pasado.\\n\\nPor favor ingresa una fecha válida (hoy o posterior).\\n\\nFormato: YYYY-MM-DD\\nEjemplo: 2026-02-15';\n        }\n      } else {\n        routeTo = 'validacion_error';\n        validacionError = '❌ Formato de fecha inválido.\\n\\nUsa el formato: YYYY-MM-DD\\nEjemplo: 2026-02-15';\n      }\n      break;\n    \n    case 'agendar_cita_paso2':\n      // Validar hora\n      const horaRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;\n      if (horaRegex.test(userInput)) {\n        newDatos.hora = userInput;\n        routeTo = 'agendar_cita_paso3';\n        newPaso = 3;\n      } else {\n        routeTo = 'validacion_error';\n        validacionError = '❌ Formato de hora inválido.\\n\\nUsa formato 24 horas: HH:MM\\nEjemplo: 14:30';\n      }\n      break;\n    \n    case 'agendar_cita_paso3':\n      // Nombre del cliente\n      if (userInput.length >= 2) {\n        newDatos.nombre = $json.user_input; // Mantener mayúsculas originales\n        routeTo = 'agendar_cita_paso4';\n        newPaso = 4;\n      } else {\n        routeTo = 'validacion_error';\n        validacionError = '❌ El nombre debe tener al menos 2 caracteres.';\n      }\n      break;\n    \n    case 'agendar_cita_paso4':\n      // Motivo de la cita\n      if (userInput.length >= 3) {\n        newDatos.motivo = $json.user_input;\n        routeTo = 'agendar_cita_paso5';\n        newPaso = 5;\n      } else {\n        routeTo = 'validacion_error';\n        validacionError = '❌ El motivo debe tener al menos 3 caracteres.';\n      }\n      break;\n    \n    case 'agendar_cita_paso5':\n      // Canal de atención\n      const canalOptions = {\n        '1': 'Presencial',\n        '2': 'Virtual',\n        '3': 'Llamada'\n      };\n      if (canalOptions[userInput]) {\n        newDatos.canal = canalOptions[userInput];\n        routeTo = 'agendar_cita_paso6';\n        newPaso = 6;\n      } else {\n        routeTo = 'validacion_error';\n        validacionError = '❌ Opción no válida.\\n\\nElige:\\n1. Presencial\\n2. Virtual\\n3. Llamada';\n      }\n      break;\n    \n    case 'agendar_cita_paso6':\n      const confirmOptions = {\n        '1': 'guardar_cita',\n        '2': 'editar_cita',\n        '3': 'cancelar_flujo'\n      };\n      routeTo = confirmOptions[userInput] || 'opcion_invalida';\n      if (routeTo === 'guardar_cita') {\n        newPaso = 0;\n      } else if (routeTo === 'editar_cita') {\n        routeTo = 'agendar_cita_paso1';\n        newPaso = 1;\n      } else if (routeTo === 'cancelar_flujo') {\n        newDatos = {};\n        newPaso = 0;\n      }\n      break;\n    \n    case 'menu_tareas':\n      const tareasOptions = {\n        '1': 'crear_tarea',\n        '2': 'ver_tareas',\n        '3': 'completar_tarea'\n      };\n      routeTo = tareasOptions[userInput] || 'opcion_invalida';\n      break;\n    \n    case 'menu_habitos':\n      const habitosOptions = {\n        '1': 'crear_habito',\n        '2': 'ver_habitos',\n        '3': 'registrar_habito'\n      };\n      routeTo = habitosOptions[userInput] || 'opcion_invalida';\n      break;\n    \n    case 'menu_listas':\n      const listasOptions = {\n        '1': 'crear_lista',\n        '2': 'ver_listas',\n        '3': 'agregar_item'\n      };\n      routeTo = listasOptions[userInput] || 'opcion_invalida';\n      break;\n    \n    case 'cita_guardada':\n    case 'cancelar_flujo':\n      if (userInput === '1') {\n        routeTo = 'menu_agenda';\n      } else if (userInput === '2') {\n        routeTo = 'menu_principal';\n      } else {\n        routeTo = 'opcion_invalida';\n      }\n      break;\n    \n    default:\n      routeTo = 'menu_principal';\n  }\n}\n\nreturn {\n  json: {\n    ...$json,\n    route_to: routeTo,\n    new_paso: newPaso,\n    new_datos: JSON.stringify(newDatos),\n    datos_actuales: newDatos,\n    validacion_error: validacionError\n  }\n};"
       },
       "id": "4f47504c-6354-4b88-a65b-9720a5e56f28",
       "name": "Router Principal",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -496,
-        -16
-      ]
+      "position": [-500, 0]
     },
     {
       "parameters": {
@@ -197,8 +107,7 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "db7c049b-0524-4959-bead-a3b4c26ce547"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -221,8 +130,7 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "0ad9d7d2-03b0-472d-8942-a15305f8ef71"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -245,8 +153,7 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "e14ad301-3b03-41e1-a4a0-dc66e27a2bc3"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -269,8 +176,7 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "48095075-05cd-413c-b89d-f4fcd4d52d28"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -293,8 +199,7 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "581ffa13-7d68-49c6-8d34-a2b8c7f532b6"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -317,8 +222,7 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "e6c094ab-07b9-4492-aa4e-151086d84a48"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -341,8 +245,7 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "8f3201a4-c1b0-402d-a3b5-6c22294c749e"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -365,8 +268,7 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "b528b77e-f288-40d1-b345-22697a265d86"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -389,8 +291,7 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "cf4a83ca-f254-4a1e-891a-bb064cd56412"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -413,8 +314,7 @@
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "c9927c7d-b3a9-4068-bec6-544931e89e39"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -433,12 +333,34 @@
                 "conditions": [
                   {
                     "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "consultar_agenda",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "consultar_agenda"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route_to }}",
                     "rightValue": "opcion_invalida",
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "a9164b4f-182c-4ab1-9b69-6e768124f88e"
+                    }
                   }
                 ],
                 "combinator": "and"
@@ -457,18 +379,224 @@
                 "conditions": [
                   {
                     "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "validacion_error",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "validacion_error"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route_to }}",
                     "rightValue": "ayuda",
                     "operator": {
                       "type": "string",
                       "operation": "equals"
-                    },
-                    "id": "f4ed9dc1-aa7c-4c75-99ed-6de3de904522"
+                    }
                   }
                 ],
                 "combinator": "and"
               },
               "renameOutput": true,
               "outputKey": "ayuda"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "cancelar_flujo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cancelar_flujo"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "menu_tareas",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "menu_tareas"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "menu_habitos",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "menu_habitos"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "menu_listas",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "menu_listas"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "menu_recordatorios",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "menu_recordatorios"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "menu_reportes",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "menu_reportes"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "menu_configuracion",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "menu_configuracion"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route_to }}",
+                    "rightValue": "menu_admin",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "menu_admin"
             }
           ]
         },
@@ -480,62 +608,308 @@
       "name": "Switch Rutas",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [
-        -304,
-        -16
-      ]
+      "position": [-300, 0]
     },
     {
       "parameters": {
-        "jsCode": "const userName = $input.item.json.user_name;\n\nconst mensaje = `Hola ${userName}, soy AgendaBot 👋\n\nEstoy aquí para ayudarte a organizar tus citas, tareas y recordatorios de forma sencilla y sin complicaciones.\n\nPuedes escribirme en cualquier momento.\nPara avanzar, solo tienes que escribir el número de la opción que quieras usar.\n\n📋 Menú principal:\n0. Ayuda\n1. Agenda (citas)\n2. Tareas\n3. Recordatorios\n4. Hábitos\n5. Listas\n6. Reportes\n7. Configuración\n8. Administrador\n\n💡 Tip rápido: escribe solo el número (por ejemplo: 1) y presiona enviar.`;\n\nreturn {\n  ...$input.item.json,\n  mensaje_respuesta: mensaje,\n  nueva_pantalla: 'menu_principal',\n  nuevo_paso: 0\n};"
+        "jsCode": "const userName = $json.user_name || 'Usuario';\n\nconst mensaje = `Hola ${userName}, soy AgendaBot 👋\n\nEstoy aquí para ayudarte a organizar tus citas, tareas y recordatorios de forma sencilla y sin complicaciones.\n\nPuedes escribirme en cualquier momento.\nPara avanzar, solo tienes que escribir el número de la opción que quieras usar.\n\n📋 Menú principal:\n0. Ayuda\n1. Agenda (citas)\n2. Tareas\n3. Recordatorios\n4. Hábitos\n5. Listas\n6. Reportes\n7. Configuración\n8. Administrador\n\n💡 Tip rápido: escribe solo el número (por ejemplo: 1) y presiona enviar.`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_principal',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
       },
       "id": "627e7567-a833-4b42-9401-2cdf6826cfc5",
       "name": "Mensaje Bienvenida",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -96,
-        -112
-      ]
+      "position": [0, -600]
     },
     {
       "parameters": {
-        "jsCode": "const mensaje = `¿En qué te puedo ayudar hoy?\n\n📋 Menú principal:\n0. Ayuda\n1. Agenda (citas)\n2. Tareas\n3. Recordatorios\n4. Hábitos\n5. Listas\n6. Reportes\n7. Configuración\n8. Administrador\n\n💡 Sugerencia:\nSi quieres empezar rápido, te recomiendo la opción 1 (Agenda).`;\n\nreturn {\n  ...$input.item.json,\n  mensaje_respuesta: mensaje,\n  nueva_pantalla: 'menu_principal',\n  nuevo_paso: 0\n};"
+        "jsCode": "const mensaje = `¿En qué te puedo ayudar hoy?\n\n📋 Menú principal:\n0. Ayuda\n1. Agenda (citas)\n2. Tareas\n3. Recordatorios\n4. Hábitos\n5. Listas\n6. Reportes\n7. Configuración\n8. Administrador\n\n💡 Sugerencia:\nSi quieres empezar rápido, te recomiendo la opción 1 (Agenda).`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_principal',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
       },
       "id": "1b9203c3-7311-45e5-9ebb-94af3098344b",
       "name": "Mensaje Menu Principal",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -96,
-        -16
-      ]
+      "position": [0, -500]
     },
     {
       "parameters": {
-        "jsCode": "const mensaje = `Perfecto, vamos con tu agenda.\n\n¿Qué deseas hacer?\n\n1. Agendar una nueva cita\n2. Consultar tu agenda\n3. Reprogramar una cita\n4. Cancelar una cita\n5. Marcar una cita como completada\n9. Volver al menú principal`;\n\nreturn {\n  ...$input.item.json,\n  mensaje_respuesta: mensaje,\n  nueva_pantalla: 'menu_agenda',\n  nuevo_paso: 0\n};"
+        "jsCode": "const mensaje = `📅 Perfecto, vamos con tu agenda.\n\n¿Qué deseas hacer?\n\n1. Agendar una nueva cita\n2. Consultar tu agenda\n3. Reprogramar una cita\n4. Cancelar una cita\n5. Marcar una cita como completada\n9. Volver al menú principal`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_agenda',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
       },
       "id": "5eb0fd46-b1c4-40f2-baf9-3128caee7a4b",
       "name": "Mensaje Menu Agenda",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -96,
-        96
-      ]
+      "position": [0, -400]
     },
     {
       "parameters": {
-        "jsCode": "const mensaje = `Empecemos a crear tu cita.\n\n📅 Paso 1 de 6\n¿Cuál es la fecha de la cita?\n\nFormato: YYYY-MM-DD\nEjemplo: 2025-12-20\n\n9. Cancelar`;\n\nreturn {\n  ...$input.item.json,\n  mensaje_respuesta: mensaje,\n  nueva_pantalla: 'agendar_cita_paso1',\n  nuevo_paso: 1\n};"
+        "jsCode": "const mensaje = `Empecemos a crear tu cita.\n\n📅 Paso 1 de 6\n¿Cuál es la fecha de la cita?\n\nFormato: YYYY-MM-DD\nEjemplo: 2026-02-15\n\n9. Cancelar`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'agendar_cita_paso1',\n    nuevo_paso: 1,\n    nuevos_datos: $json.new_datos || '{}'\n  }\n};"
       },
       "id": "2b1df695-d992-48d4-9b59-56b2459c9091",
       "name": "Agendar Paso 1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -96,
-        192
-      ]
+      "position": [0, -300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `⏰ Paso 2 de 6\n¿A qué hora será la cita?\n\nFormato 24 horas (HH:MM)\nEjemplo: 14:30\n\n9. Cancelar`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'agendar_cita_paso2',\n    nuevo_paso: 2,\n    nuevos_datos: $json.new_datos || '{}'\n  }\n};"
+      },
+      "id": "agendar-paso2-node",
+      "name": "Agendar Paso 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, -200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `👤 Paso 3 de 6\n¿A nombre de quién es la cita?\n\nEscribe el nombre completo.\n\n9. Cancelar`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'agendar_cita_paso3',\n    nuevo_paso: 3,\n    nuevos_datos: $json.new_datos || '{}'\n  }\n};"
+      },
+      "id": "agendar-paso3-node",
+      "name": "Agendar Paso 3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, -100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `📝 Paso 4 de 6\nCuéntame brevemente el motivo de la cita.\n\nEjemplo: Asesoría técnica\n\n9. Cancelar`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'agendar_cita_paso4',\n    nuevo_paso: 4,\n    nuevos_datos: $json.new_datos || '{}'\n  }\n};"
+      },
+      "id": "agendar-paso4-node",
+      "name": "Agendar Paso 4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `📞 Paso 5 de 6\n¿Cómo será la atención?\n\n1. Presencial\n2. Virtual\n3. Llamada\n9. Cancelar`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'agendar_cita_paso5',\n    nuevo_paso: 5,\n    nuevos_datos: $json.new_datos || '{}'\n  }\n};"
+      },
+      "id": "agendar-paso5-node",
+      "name": "Agendar Paso 5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const datos = $json.datos_actuales || {};\n\nconst mensaje = `✅ Paso 6 de 6\nRevisa la información de tu cita:\n\n📅 Fecha: ${datos.fecha || 'No especificada'}\n⏰ Hora: ${datos.hora || 'No especificada'}\n👤 Cliente: ${datos.nombre || 'No especificado'}\n📝 Motivo: ${datos.motivo || 'No especificado'}\n📞 Canal: ${datos.canal || 'No especificado'}\n\n¿Qué deseas hacer?\n1. ✅ Confirmar y guardar\n2. ✏️ Editar información\n3. ❌ Cancelar`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'agendar_cita_paso6',\n    nuevo_paso: 6,\n    nuevos_datos: $json.new_datos || '{}'\n  }\n};"
+      },
+      "id": "agendar-paso6-node",
+      "name": "Agendar Paso 6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const datos = $json.datos_actuales || {};\nconst telegramUser = $json.telegram_user;\nconst timestamp = new Date().toISOString();\n\n// Generar ID único para la cita\nconst idCita = 'CITA-' + Date.now().toString().slice(-6);\n\nreturn {\n  json: {\n    ...$json,\n    cita_a_guardar: {\n      id_cita: idCita,\n      fecha: datos.fecha,\n      hora: datos.hora,\n      nombre: datos.nombre,\n      motivo: datos.motivo,\n      canal: datos.canal,\n      estado: 'PENDIENTE',\n      creado_por: telegramUser,\n      timestamp_creacion: timestamp\n    },\n    id_cita: idCita\n  }\n};"
+      },
+      "id": "preparar-guardar-cita-node",
+      "name": "Preparar Guardar Cita",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1BYDjI0JpYwxsRnA3DmileUc8Q2qjuzZoDfFoL2GaZEQ/edit?gid=0#gid=0",
+          "mode": "url",
+          "__regex": "https:\\/\\/(?:drive|docs)\\.google\\.com(?:\\/.*|)\\/d\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "CITAS",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_cita": "={{ $json.cita_a_guardar.id_cita }}",
+            "fecha": "={{ $json.cita_a_guardar.fecha }}",
+            "hora": "={{ $json.cita_a_guardar.hora }}",
+            "nombre": "={{ $json.cita_a_guardar.nombre }}",
+            "motivo": "={{ $json.cita_a_guardar.motivo }}",
+            "canal": "={{ $json.cita_a_guardar.canal }}",
+            "estado": "={{ $json.cita_a_guardar.estado }}",
+            "creado_por": "={{ $json.cita_a_guardar.creado_por }}",
+            "timestamp_creacion": "={{ $json.cita_a_guardar.timestamp_creacion }}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "id": "guardar-cita-sheets-node",
+      "name": "Guardar Cita en Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [200, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "G3DQi64AsP2s4cAL",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recuperar datos del nodo anterior\nconst prevData = $('Preparar Guardar Cita').first().json;\nconst idCita = prevData.id_cita;\n\nconst mensaje = `🎉 ¡Listo! Tu cita quedó agendada correctamente.\n\n🆔 ID de la cita: ${idCita}\n\n¿Qué deseas hacer ahora?\n1. Volver a Agenda\n2. Ir al menú principal`;\n\nreturn {\n  json: {\n    ...prevData,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'cita_guardada',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "mensaje-cita-guardada-node",
+      "name": "Mensaje Cita Guardada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1BYDjI0JpYwxsRnA3DmileUc8Q2qjuzZoDfFoL2GaZEQ/edit?gid=0#gid=0",
+          "mode": "url",
+          "__regex": "https:\\/\\/(?:drive|docs)\\.google\\.com(?:\\/.*|)\\/d\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "CITAS",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "obtener-citas-node",
+      "name": "Obtener Citas",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [0, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "G3DQi64AsP2s4cAL",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recuperar datos del usuario desde Switch Rutas\nconst routerData = $('Router Principal').first().json;\nconst telegramUser = routerData.telegram_user;\nconst chatId = routerData.chat_id;\nconst allItems = $input.all();\nconst hoy = new Date().toISOString().split('T')[0];\n\nlet citasFiltradas = [];\n\nfor (let item of allItems) {\n  const cita = item.json;\n  // Filtrar citas del usuario y pendientes/futuras\n  if (cita.creado_por && cita.creado_por.toString() === telegramUser && \n      cita.estado !== 'CANCELADA' && \n      cita.estado !== 'COMPLETADA' &&\n      cita.fecha >= hoy) {\n    citasFiltradas.push(cita);\n  }\n}\n\n// Ordenar por fecha y hora\ncitasFiltradas.sort((a, b) => {\n  const fechaA = a.fecha + ' ' + a.hora;\n  const fechaB = b.fecha + ' ' + b.hora;\n  return fechaA.localeCompare(fechaB);\n});\n\nlet mensaje = '';\n\nif (citasFiltradas.length === 0) {\n  mensaje = `📅 Tu Agenda\\n\\nNo tienes citas pendientes.\\n\\n¿Qué deseas hacer?\\n1. Agendar una nueva cita\\n9. Volver al menú principal`;\n} else {\n  mensaje = `📅 Tu Agenda\\n\\nTienes ${citasFiltradas.length} cita(s) pendiente(s):\\n\\n`;\n  \n  citasFiltradas.forEach((cita, index) => {\n    mensaje += `${index + 1}. 📌 ${cita.id_cita}\\n`;\n    mensaje += `   📅 ${cita.fecha} ⏰ ${cita.hora}\\n`;\n    mensaje += `   👤 ${cita.nombre}\\n`;\n    mensaje += `   📝 ${cita.motivo}\\n`;\n    mensaje += `   📞 ${cita.canal}\\n\\n`;\n  });\n  \n  mensaje += `¿Qué deseas hacer?\\n1. Agendar una nueva cita\\n9. Volver al menú principal`;\n}\n\nreturn {\n  json: {\n    ...routerData,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_agenda',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "mostrar-agenda-node",
+      "name": "Mostrar Agenda",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [200, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const session = $json.session || { pantalla_actual: 'menu_principal', paso_actual: '0' };\nconst pantallaActual = session.pantalla_actual || 'menu_principal';\n\nlet opcionesDisponibles = '';\n\nswitch (pantallaActual) {\n  case 'menu_principal':\n    opcionesDisponibles = '0 al 8';\n    break;\n  case 'menu_agenda':\n    opcionesDisponibles = '1 al 5, o 9 para volver';\n    break;\n  case 'agendar_cita_paso5':\n    opcionesDisponibles = '1, 2, 3 o 9';\n    break;\n  case 'agendar_cita_paso6':\n    opcionesDisponibles = '1, 2 o 3';\n    break;\n  default:\n    opcionesDisponibles = 'las mostradas en pantalla';\n}\n\nconst mensaje = `⚠️ Ups, esa opción no existe en este menú.\\n\\nPor favor escribe uno de los números que ves en pantalla.\\n\\n📍 Estás en: ${pantallaActual.replace(/_/g, ' ')}\\n🔢 Opciones disponibles: ${opcionesDisponibles}`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: pantallaActual,\n    nuevo_paso: parseInt(session.paso_actual) || 0,\n    nuevos_datos: session.datos_parciales || '{}'\n  }\n};"
+      },
+      "id": "opcion-invalida-node",
+      "name": "Mensaje Opción Inválida",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const errorMsg = $json.validacion_error || 'Error de validación';\nconst session = $json.session || { pantalla_actual: 'menu_principal', paso_actual: '0', datos_parciales: '{}' };\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: errorMsg,\n    nueva_pantalla: session.pantalla_actual,\n    nuevo_paso: parseInt(session.paso_actual) || 0,\n    nuevos_datos: session.datos_parciales || '{}'\n  }\n};"
+      },
+      "id": "validacion-error-node",
+      "name": "Mensaje Validación Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `📚 Centro de Ayuda - AgendaBot\\n\\n¿Cómo usar AgendaBot?\\n\\n1️⃣ Escribe el número de la opción que deseas\\n2️⃣ Sigue las instrucciones en pantalla\\n3️⃣ Usa 9 para volver o cancelar en cualquier momento\\n\\n📋 Funciones disponibles:\\n• Agenda: Crea, consulta y gestiona tus citas\\n• Tareas: Organiza tus pendientes\\n• Recordatorios: No olvides nada importante\\n• Hábitos: Crea rutinas saludables\\n• Listas: Crea listas personalizadas\\n\\n💡 Tip: Escribe /start para reiniciar en cualquier momento\\n\\n9. Volver al menú principal`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_principal',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "ayuda-node",
+      "name": "Mensaje Ayuda",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `❌ Operación cancelada.\\n\\nNo te preocupes, ningún dato fue guardado.\\n\\n¿Qué deseas hacer?\\n1. Volver a Agenda\\n2. Ir al menú principal`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'cancelar_flujo',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "cancelar-flujo-node",
+      "name": "Mensaje Cancelar Flujo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 800]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `📋 Menú de Tareas\\n\\n¿Qué deseas hacer?\\n\\n1. Crear nueva tarea\\n2. Ver mis tareas pendientes\\n3. Marcar tarea como completada\\n9. Volver al menú principal`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_tareas',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "menu-tareas-node",
+      "name": "Mensaje Menu Tareas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 900]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `🔁 Menú de Hábitos\\n\\n¿Qué deseas hacer?\\n\\n1. Crear nuevo hábito\\n2. Ver mis hábitos\\n3. Registrar hábito completado hoy\\n9. Volver al menú principal`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_habitos',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "menu-habitos-node",
+      "name": "Mensaje Menu Hábitos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 1000]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `📝 Menú de Listas\\n\\n¿Qué deseas hacer?\\n\\n1. Crear nueva lista\\n2. Ver mis listas\\n3. Agregar item a una lista\\n9. Volver al menú principal`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_listas',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "menu-listas-node",
+      "name": "Mensaje Menu Listas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 1100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `🔔 Menú de Recordatorios\\n\\n¿Qué deseas hacer?\\n\\n1. Crear nuevo recordatorio\\n2. Ver mis recordatorios\\n3. Eliminar un recordatorio\\n9. Volver al menú principal`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_recordatorios',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "menu-recordatorios-node",
+      "name": "Mensaje Menu Recordatorios",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 1200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `📊 Menú de Reportes\\n\\n¿Qué reporte deseas ver?\\n\\n1. Resumen del día\\n2. Citas de la semana\\n3. Tareas pendientes\\n4. Estadísticas generales\\n9. Volver al menú principal`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_reportes',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "menu-reportes-node",
+      "name": "Mensaje Menu Reportes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 1300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mensaje = `⚙️ Menú de Configuración\\n\\n¿Qué deseas configurar?\\n\\n1. Notificaciones\\n2. Zona horaria\\n3. Preferencias de recordatorios\\n9. Volver al menú principal`;\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_configuracion',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "menu-configuracion-node",
+      "name": "Mensaje Menu Configuración",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 1400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const userRole = $json.user_role || 'usuario';\n\nlet mensaje = '';\n\nif (userRole === 'admin') {\n  mensaje = `👑 Panel de Administrador\\n\\n¿Qué deseas hacer?\\n\\n1. Ver todos los usuarios\\n2. Gestionar permisos\\n3. Ver logs del sistema\\n4. Estadísticas globales\\n5. Configuración del bot\\n9. Volver al menú principal`;\n} else {\n  mensaje = `⛔ Acceso Restringido\\n\\nEsta sección es solo para administradores.\\n\\nSi necesitas acceso, contacta al administrador.\\n\\n9. Volver al menú principal`;\n}\n\nreturn {\n  json: {\n    ...$json,\n    mensaje_respuesta: mensaje,\n    nueva_pantalla: 'menu_admin',\n    nuevo_paso: 0,\n    nuevos_datos: '{}'\n  }\n};"
+      },
+      "id": "menu-admin-node",
+      "name": "Mensaje Menu Admin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 1500]
     },
     {
       "parameters": {
@@ -547,10 +921,7 @@
       "name": "Enviar Respuesta",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [
-        112,
-        -16
-      ],
+      "position": [600, 0],
       "webhookId": "8ff9efe5-9c2d-4b09-8ef5-07de39d42d0c",
       "credentials": {
         "telegramApi": {
@@ -558,6 +929,86 @@
           "name": "Telegram Bot Token"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1BYDjI0JpYwxsRnA3DmileUc8Q2qjuzZoDfFoL2GaZEQ/edit?gid=0#gid=0",
+          "mode": "url",
+          "__regex": "https:\\/\\/(?:drive|docs)\\.google\\.com(?:\\/.*|)\\/d\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "LOGS",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "telegram_user": "={{ $json.telegram_user }}",
+            "pantalla": "={{ $json.nueva_pantalla }}",
+            "opcion_elegida": "={{ $json.user_input }}",
+            "resultado": "={{ $json.route_to }}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "id": "registrar-log-node",
+      "name": "Registrar Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [800, 0],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "G3DQi64AsP2s4cAL",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1BYDjI0JpYwxsRnA3DmileUc8Q2qjuzZoDfFoL2GaZEQ/edit?gid=0#gid=0",
+          "mode": "url",
+          "__regex": "https:\\/\\/(?:drive|docs)\\.google\\.com(?:\\/.*|)\\/d\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "SESSIONS",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telegram_user": "={{ $json.telegram_user }}",
+            "pantalla_actual": "={{ $json.nueva_pantalla }}",
+            "paso_actual": "={{ $json.nuevo_paso }}",
+            "datos_parciales": "={{ $json.nuevos_datos || $json.new_datos || '{}' }}",
+            "timestamp_ultima_interaccion": "={{ $json.timestamp }}"
+          },
+          "matchingColumns": ["telegram_user"]
+        },
+        "options": {}
+      },
+      "id": "actualizar-sesion-node",
+      "name": "Actualizar Sesión",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [1000, 0],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "G3DQi64AsP2s4cAL",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "pinData": {},
@@ -574,50 +1025,6 @@
       ]
     },
     "Extraer Datos Usuario": {
-      "main": [
-        [
-          {
-            "node": "Obtener Sesión",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Obtener Sesión": {
-      "main": [
-        [
-          {
-            "node": "Procesar Sesión",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Procesar Sesión": {
-      "main": [
-        [
-          {
-            "node": "Verificar Permisos",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Verificar Permisos": {
-      "main": [
-        [
-          {
-            "node": "Validar Permiso",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validar Permiso": {
       "main": [
         [
           {
@@ -686,6 +1093,132 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Agendar Paso 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agendar Paso 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agendar Paso 4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agendar Paso 5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agendar Paso 6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar Guardar Cita",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Obtener Citas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Opción Inválida",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Validación Error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Ayuda",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Cancelar Flujo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Menu Tareas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Menu Hábitos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Menu Listas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Menu Recordatorios",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Menu Reportes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Menu Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Menu Admin",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -732,6 +1265,259 @@
           }
         ]
       ]
+    },
+    "Agendar Paso 2": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar Paso 3": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar Paso 4": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar Paso 5": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar Paso 6": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Guardar Cita": {
+      "main": [
+        [
+          {
+            "node": "Guardar Cita en Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar Cita en Sheets": {
+      "main": [
+        [
+          {
+            "node": "Mensaje Cita Guardada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Cita Guardada": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Citas": {
+      "main": [
+        [
+          {
+            "node": "Mostrar Agenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mostrar Agenda": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Opción Inválida": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Validación Error": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Ayuda": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Cancelar Flujo": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Menu Tareas": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Menu Hábitos": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Menu Listas": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Menu Recordatorios": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Menu Reportes": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Menu Configuración": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Menu Admin": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Registrar Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar Log": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Sesión",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -739,11 +1525,11 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "265dfcf7-df3d-45ab-b7e3-6c8a7345a98d",
+  "versionId": "complete-v2-fixed",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b0d6ed15b55117dd5ddf925b270882653256e8a4b466d5ace57722e6692178ca"
   },
-  "id": "ymGu5T5JRwikeLLzrRzvl",
+  "id": "AgendaBot-Complete",
   "tags": []
 }
